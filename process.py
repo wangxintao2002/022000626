@@ -1,5 +1,6 @@
 import os
 import re
+from openpyxl import Workbook
 
 provinceList = [
     "北京", "天津", "上海", "重庆", "内蒙古", "广西", "西藏", "宁夏", "新疆", "河北", "山西", "辽宁", "吉林",
@@ -7,30 +8,6 @@ provinceList = [
     "四川", "贵州", "云南", "陕西", "甘肃", "青海"]
 
 
-def get_all_filename(path):
-    return os.listdir(path)
-
-
-# def process_province(province, d, str):
-#     if province.find('，') == -1:
-#         for name in provinceList:
-#             if name in province:
-#                 d[name] = int(d[str])
-#                 return
-#                 #print(name,d[name])
-#     else:
-#         if province.find("均") == 0 or province.find("在") == 0:
-#             for name in provinceList:
-#                 if name in province:
-#                     d[name] = int(d[str])
-#                     return
-#         piece = province.split('，')
-#         for one in piece:
-#             for name in provinceList:
-#                 if name in one:
-#                     if (name not in d) and one[one.rfind(name)+len(name)].isdigit():
-#                         d[name] = int(one[one.rfind(name)+len(name):one.rfind("例")])
-#                     break
 
 alldata = dict()
 
@@ -40,7 +17,6 @@ def process_reg(province,d , str):
             if name in province:
                 d[name] = int(d[str])
                 return
-                #print(name,d[name])
     else:
         if province.find("均") == 0 or province.find("在") == 0:
             for name in provinceList:
@@ -58,7 +34,6 @@ def process_reg(province,d , str):
 def process_new_diagnosis(filenames, basePath):
     for filename in filenames:
         date = filename[0:10]
-        print(date)
         d = dict()
         alldata[date] = dict()
         file = open(basePath + "\\" + filename, 'r', encoding='utf-8')
@@ -69,11 +44,9 @@ def process_new_diagnosis(filenames, basePath):
             # 求出本土新增总病例
             num = result.group()
             d['diagnosis'] = int(num[4:num.find("例（")])
-            #print(d['diagnosis'])
             # 求出各省份新增病例
             provinces = result.group()
             provinces = provinces[provinces.index('（') + 1:provinces.index("）")]
-            #print(provinces)
             process_reg(provinces, d,'diagnosis')
 
         else:
@@ -83,8 +56,7 @@ def process_new_diagnosis(filenames, basePath):
 def process_new_asymptomatic(filenames,basePath):
     for filename in filenames:
         date = filename[0:10]
-        #print(date)
-        d = {'Date': date}
+        d = dict()
         file = open(basePath + "\\" + filename, 'r', encoding='utf-8')
         content = file.read()
         pattern = re.compile(r'本土\d.*）(?=。\n当日解除|；当日解除|；当日无)')
@@ -94,18 +66,34 @@ def process_new_asymptomatic(filenames,basePath):
             d['asymptomatic'] = int(num[2:num.find("例")])
             provinces = result.group()
             provinces = provinces[provinces.find("（")+1:provinces.find("）")]
-            #print(provinces)
             process_reg(provinces,d, 'asymptomatic')
-            #print(d)
 
         else:
             d['asymptomatic'] = 0
         alldata[date]['asymptomatic'] = d
+def pipe_into_excel(date):
+    wb = Workbook()
+    sheet1 = wb.create_sheet(index=1, title="新增确诊")
+    sheet2 = wb.create_sheet(index=2, title="新增无症状")
+    i = 1
+
+    for key, value in alldata[date]['diagnosis'].items():
+        sheet1.cell(i, 1, value=key)
+        sheet1.cell(i, 2, value=value)
+        i = i + 1
+    i = 1
+    for key, value in alldata[date]['asymptomatic'].items():
+        sheet2.cell(i, 1, value=key)
+        sheet2.cell(i, 2, value=value)
+        i = i + 1
+
+    wb.save('D:\\excel\\'+date+'.xlsx')
 
 if "__main__" == __name__:
     basePath = "D:\\疫情防控数据"
-    filenames = get_all_filename(basePath)
+    filenames = os.listdir(basePath)
     process_new_diagnosis(filenames, basePath)
     process_new_asymptomatic(filenames,basePath)
-    print(alldata)
 
+    for key,value in alldata.items():
+        pipe_into_excel(key)
