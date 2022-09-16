@@ -1,18 +1,18 @@
 import asyncio
+import multiprocessing
+
 from pyppeteer import launch
 import os
 from lxml import etree
 import time
-import random
+from multiprocessing import Pool
 
 
-
-
-
-async def pyppteer_fetchContent(url):
-
+async def pyppeteer_fetchContent(url):
     #以headless模式打开浏览器，将浏览器处理标准输出导入process.stdout，并设置自动关闭
+
     browser = await launch({'headless': True, 'dumpio': True, 'autoClose': True})
+
     page = await browser.newPage()
     # 绕过浏览器检测
     await page.evaluateOnNewDocument('() =>{ Object.defineProperties(navigator,'
@@ -37,7 +37,7 @@ async def pyppteer_fetchContent(url):
 def get_page_souce(url):
 
     #获取当前事件循环，并不断获取每一个页面的内容
-    return asyncio.get_event_loop().run_until_complete(pyppteer_fetchContent(url))
+    return asyncio.get_event_loop().run_until_complete(pyppeteer_fetchContent(url))
 
 
 #总共42页数据，获取每一页的url
@@ -98,21 +98,26 @@ def save_file(path, filename, content):
     with open(path + filename + ".txt", 'w', encoding='utf-8') as f:
         f.write(content)
 
+def work(url):
+    s = get_page_souce(url)
+    filenames = get_files(s)
+    print(filenames)
+    index = 0
+    links = get_link_url(s)
+    for link in links:
+        html = get_page_souce(link)
+        content = get_content(html)
+        print(filenames[index] + "爬取成功")
+        save_file('D:/数据/', filenames[index], content)
+        index = index + 1
+    print("-----" * 20)
 
-if "__main__" == __name__:
+def crawler_work():
     start = time.time()
-    for url in get_page_url():
-        s = get_page_souce(url)
-        time.sleep(random.randint(3, 6))
-        filenames = get_files(s)
-        index = 0
-        links = get_link_url(s)
-        for link in links:
-            html = get_page_souce(link)
-            content = get_content(html)
-            print(filenames[index] + "爬取成功")
-            save_file('D:/数据/', filenames[index], content)
-            index = index + 1
-        print("-----"*20)
+    urls = get_page_url()
+    #多线程爬取
+    pool = Pool(multiprocessing.cpu_count())
+    pool.map(work,urls)
+
     end = time.time()
     print({end-start})

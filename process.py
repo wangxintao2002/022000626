@@ -99,7 +99,7 @@ def pipe_into_excel(date):
     wb.save('D:\\excel\\' + date + '.xlsx')
 
 
-if "__main__" == __name__:
+def process_work():
     basePath = "D:\\疫情防控数据"
     # 读出所有数据
     filenames = os.listdir(basePath)
