@@ -8,7 +8,7 @@ import time
 from multiprocessing import Pool
 
 
-async def pyppeteer_fetchContent(url):
+async def pyppeteer_fetch_content(url):
     #以headless模式打开浏览器，将浏览器处理标准输出导入process.stdout，并设置自动关闭
 
     browser = await launch({'headless': True, 'dumpio': True, 'autoClose': True})
@@ -22,7 +22,6 @@ async def pyppeteer_fetchContent(url):
     await page.setUserAgent(
         'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Mobile Safari/537.36 Edg/105.0.1343.27')
     await page.goto(url)
-    # await asyncio.sleep(10)
 
     #等待页面转到一个新链接或者是刷新
     await asyncio.wait([page.waitForNavigation()])
@@ -37,14 +36,14 @@ async def pyppeteer_fetchContent(url):
 def get_page_souce(url):
 
     #获取当前事件循环，并不断获取每一个页面的内容
-    return asyncio.get_event_loop().run_until_complete(pyppeteer_fetchContent(url))
+    return asyncio.get_event_loop().run_until_complete(pyppeteer_fetch_content(url))
 
 
 #总共42页数据，获取每一页的url
 def get_page_url():
     url_list = []
 
-    #遍历42页
+    #遍历41页
     for page in range(1, 42):
         if page == 1:
             url_list.append('http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml')
@@ -110,10 +109,11 @@ def work(url):
         print(filenames[index] + "爬取成功")
         save_file('D:/数据/', filenames[index], content)
         index = index + 1
-    print("-----" * 20)
 
 def crawler_work():
     start = time.time()
+
+    #获取共41页的url
     urls = get_page_url()
     #多线程爬取
     pool = Pool(multiprocessing.cpu_count())
